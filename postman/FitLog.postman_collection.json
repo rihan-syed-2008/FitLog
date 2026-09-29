@@ -1,0 +1,998 @@
+{
+  "info": {
+    "_postman_id": "7f595a4d-8f61-4b84-9d5c-35fb282187bf",
+    "name": "FitLog API Collection",
+    "description": "Comprehensive authoritative test collection for FitLog Backend (Spring Boot 4.1.1, Java 21, MySQL, JWT, JJWT 0.12.6)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "foreignToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workoutId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "mealId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Register - Success (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"FitLog Athlete\",\n  \"email\": \"athlete@fitlog.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register - Duplicate Email (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"FitLog Athlete Duplicate\",\n  \"email\": \"athlete@fitlog.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register - Foreign User (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Foreign Athlete\",\n  \"email\": \"foreign@fitlog.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login - Success (200 + JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"athlete@fitlog.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login - Foreign User (200 + JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('foreignToken', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"foreign@fitlog.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login - Wrong Password (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"athlete@fitlog.com\",\n  \"password\": \"WrongPassword!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User /me - Valid JWT (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Protected Without Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Protected With Garbage Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer this.is.a.garbage.jwt.token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Workouts",
+      "item": [
+        {
+          "name": "Create Workout - Success (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('workoutId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutType\": \"RUNNING\",\n  \"notes\": \"Morning interval sprint session\",\n  \"durationMinutes\": 45,\n  \"caloriesBurnt\": 420,\n  \"workoutDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"]
+            }
+          }
+        },
+        {
+          "name": "List Workouts - With Pagination & Search (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workouts?search=sprint&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "sprint"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Workout By ID - Success (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Workout - Success (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutType\": \"RUNNING\",\n  \"notes\": \"Updated morning tempo sprint run\",\n  \"durationMinutes\": 50,\n  \"caloriesBurnt\": 460,\n  \"workoutDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}"]
+            }
+          }
+        },
+        {
+          "name": "Foreign User Access Workout (404 Not Found)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{foreignToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}"]
+            }
+          }
+        },
+        {
+          "name": "Workout Validation - Negative Calories (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutType\": \"CYCLING\",\n  \"notes\": \"Invalid\",\n  \"durationMinutes\": 30,\n  \"caloriesBurnt\": -50,\n  \"workoutDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"]
+            }
+          }
+        },
+        {
+          "name": "Workout Validation - Duration Zero (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutType\": \"CYCLING\",\n  \"notes\": \"Invalid\",\n  \"durationMinutes\": 0,\n  \"caloriesBurnt\": 200,\n  \"workoutDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"]
+            }
+          }
+        },
+        {
+          "name": "Workout Validation - Future Date (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutType\": \"CYCLING\",\n  \"notes\": \"Future\",\n  \"durationMinutes\": 30,\n  \"caloriesBurnt\": 200,\n  \"workoutDate\": \"2099-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"]
+            }
+          }
+        },
+        {
+          "name": "Workout Validation - Invalid Enum (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutType\": \"INVALID_SPORT\",\n  \"notes\": \"Invalid\",\n  \"durationMinutes\": 30,\n  \"caloriesBurnt\": 200,\n  \"workoutDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Meals",
+      "item": [
+        {
+          "name": "Create Meal - Success (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('mealId', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItem\": \"Oatmeal with Blueberries and Almond Butter\",\n  \"mealType\": \"BREAKFAST\",\n  \"quantity\": 1.5,\n  \"quantityUnit\": \"CUP\",\n  \"calories\": 420,\n  \"mealDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meals",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals"]
+            }
+          }
+        },
+        {
+          "name": "List Meals - With Filters & Search (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/meals?search=oatmeal&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "oatmeal"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Meal By ID - Success (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/meals/{{mealId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals", "{{mealId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Meal - Success (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItem\": \"Oatmeal with Extra Berries\",\n  \"mealType\": \"BREAKFAST\",\n  \"quantity\": 2.0,\n  \"quantityUnit\": \"CUP\",\n  \"calories\": 480,\n  \"mealDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meals/{{mealId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals", "{{mealId}}"]
+            }
+          }
+        },
+        {
+          "name": "Foreign User Access Meal (404 Not Found)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{foreignToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/meals/{{mealId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals", "{{mealId}}"]
+            }
+          }
+        },
+        {
+          "name": "Meal Validation - Quantity Zero (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItem\": \"Eggs\",\n  \"mealType\": \"BREAKFAST\",\n  \"quantity\": 0,\n  \"quantityUnit\": \"PIECE\",\n  \"calories\": 140,\n  \"mealDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meals",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals"]
+            }
+          }
+        },
+        {
+          "name": "Meal Validation - Calories Exceeds 5000 (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItem\": \"Monster Feast\",\n  \"mealType\": \"DINNER\",\n  \"quantity\": 1,\n  \"quantityUnit\": \"SERVING\",\n  \"calories\": 999999,\n  \"mealDate\": \"2026-09-28\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meals",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals"]
+            }
+          }
+        },
+        {
+          "name": "Meal Validation - Future Date (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"foodItem\": \"Future Food\",\n  \"mealType\": \"LUNCH\",\n  \"quantity\": 1,\n  \"quantityUnit\": \"SERVING\",\n  \"calories\": 400,\n  \"mealDate\": \"2099-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meals",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Goals",
+      "item": [
+        {
+          "name": "Create or Update Goal - Success (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weeklyWorkoutTarget\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Goal - Success (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/goals/current",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals", "current"]
+            }
+          }
+        },
+        {
+          "name": "Get Goal Progress - Success (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/goals/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals", "progress"]
+            }
+          }
+        },
+        {
+          "name": "Goal Validation - Target Zero (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weeklyWorkoutTarget\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals"]
+            }
+          }
+        },
+        {
+          "name": "Goal Validation - Target Fifteen (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weeklyWorkoutTarget\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Summaries",
+      "item": [
+        {
+          "name": "Get Daily Summary (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/daily?date=2026-09-28",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "daily"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-09-28"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Weekly Trend - 8 Weeks (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/weekly-trend?weeks=8",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "weekly-trend"],
+              "query": [
+                {
+                  "key": "weeks",
+                  "value": "8"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Weekly Summary - Future Week BR10 (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/weekly?weekOf=2099-01-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "weekly"],
+              "query": [
+                {
+                  "key": "weekOf",
+                  "value": "2099-01-01"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Weekly Summary - Empty Week BR8 (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/weekly?weekOf=2025-01-06",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "weekly"],
+              "query": [
+                {
+                  "key": "weekOf",
+                  "value": "2025-01-06"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate Weekly Summary - First Time BR9 (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/weekly?weekOf=2026-09-28",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "weekly"],
+              "query": [
+                {
+                  "key": "weekOf",
+                  "value": "2026-09-28"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate Weekly Summary - Duplicate Call BR9 (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/weekly?weekOf=2026-09-28",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "weekly"],
+              "query": [
+                {
+                  "key": "weekOf",
+                  "value": "2026-09-28"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Stored Weekly Summaries (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/summaries/weekly",
+              "host": ["{{baseUrl}}"],
+              "path": ["summaries", "weekly"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Delete Clean-up",
+      "item": [
+        {
+          "name": "Delete Workout (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Meal (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/meals/{{mealId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["meals", "{{mealId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
