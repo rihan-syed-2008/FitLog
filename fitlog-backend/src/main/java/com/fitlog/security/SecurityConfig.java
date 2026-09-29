@@ -23,20 +23,24 @@ public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final RestAuthenticationEntryPoint authenticationEntryPoint;
   private final RestAccessDeniedHandler accessDeniedHandler;
+  private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+  private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+  private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
   public SecurityConfig(
       JwtAuthenticationFilter jwtAuthenticationFilter,
       RestAuthenticationEntryPoint authenticationEntryPoint,
-      RestAccessDeniedHandler accessDeniedHandler) {
+      RestAccessDeniedHandler accessDeniedHandler,
+      OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
+      OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler,
+      HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) {
 
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.authenticationEntryPoint = authenticationEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
-  }
-
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
+    this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
+    this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
+    this.cookieAuthorizationRequestRepository = cookieAuthorizationRequestRepository;
   }
 
   @Bean
@@ -90,12 +94,29 @@ public class SecurityConfig {
             auth
                 .requestMatchers(
                     "/api/auth/register",
-                    "/api/auth/login"
+                    "/api/auth/login",
+                    "/oauth2/**",
+                    "/login/oauth2/**"
                 ).permitAll()
                 .requestMatchers(
                     "/api/admin/**"
                 ).hasRole("ADMIN")
                 .anyRequest().authenticated()
+        )
+
+        .oauth2Login(oauth2 ->
+            oauth2
+                .authorizationEndpoint(endpoint ->
+                    endpoint
+                        .baseUri("/oauth2/authorization")
+                        .authorizationRequestRepository(cookieAuthorizationRequestRepository)
+                )
+                .redirectionEndpoint(endpoint ->
+                    endpoint
+                        .baseUri("/login/oauth2/code/*")
+                )
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+                .failureHandler(oAuth2AuthenticationFailureHandler)
         )
 
         .addFilterBefore(

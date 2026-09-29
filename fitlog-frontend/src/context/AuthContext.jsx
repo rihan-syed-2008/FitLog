@@ -47,6 +47,15 @@ export function AuthProvider({ children }) {
     return registeredUser;
   };
 
+  const handleOAuthSuccess = async (newToken) => {
+    localStorage.setItem('fitlog_token', newToken);
+    setToken(newToken);
+    const userData = await authApi.getMe();
+    localStorage.setItem('fitlog_user', JSON.stringify(userData));
+    setUser(userData);
+    return userData;
+  };
+
   const logout = () => {
     localStorage.removeItem('fitlog_token');
     localStorage.removeItem('fitlog_user');
@@ -64,7 +73,8 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
-        setUser
+        setUser,
+        handleOAuthSuccess
       }}
     >
       {children}

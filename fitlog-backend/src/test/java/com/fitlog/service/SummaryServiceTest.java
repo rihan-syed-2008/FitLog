@@ -43,6 +43,9 @@ class SummaryServiceTest {
   @Mock
   private CurrentUserService currentUserService;
 
+  @Mock
+  private WeeklySummaryEmailService weeklySummaryEmailService;
+
   @InjectMocks
   private SummaryService summaryService;
 
@@ -114,10 +117,12 @@ class SummaryServiceTest {
     assertFalse(result.created());
     assertEquals(42L, result.response().id());
     verify(weeklySummaryRepository, never()).save(any());
+    // Rule 19: Existing summary must NEVER trigger duplicate email
+    verify(weeklySummaryEmailService, never()).sendWeeklySummaryEmail(any(), any(), any());
   }
 
   @Test
-  @DisplayName("Generate new weekly summary successfully when data is present")
+  @DisplayName("Generate new weekly summary successfully when data is present and triggers email")
   void testGenerateNewWeeklySummarySuccess() {
     when(currentUserService.getCurrentUser()).thenReturn(mockUser);
     LocalDate pastDate = LocalDate.now().minusWeeks(1);
@@ -161,5 +166,54 @@ class SummaryServiceTest {
     assertEquals(100L, result.response().id());
     assertTrue(result.response().goalMet());
     verify(weeklySummaryRepository, times(1)).save(any(WeeklySummary.class));
+    // Rule 13: Newly generated summary triggers email
+    verify(weeklySummaryEmailService, times(1)).sendWeeklySummaryEmail(
+        eq(mockUser.getEmail()),
+        any(),
+        argThat(s -> s.id().equals(100L) && s.workoutsCompleted() == 3)
+    );
+  }
+
+  @Test
+  @DisplayName("Rule 18: Email delivery failure does NOT abort or roll back successful summary generation")
+  void testEmailFailureDoesNotRollbackOrFailSummary() {
+    when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+    LocalDate pastDate = LocalDate.now().minusWeeks(1);
+    LocalDate weekStart = WeekUtil.startOfWeek(pastDate);
+    LocalDate weekEnd = WeekUtil.endOfWeek(pastDate);
+
+    when(weeklySummaryRepository.findByUserIdAndWeekStart(1L, weekStart))
+        .thenReturn(Optional.empty());
+    when(workoutRepository.countByUserIdAndWorkoutDateBetween(1L, weekStart, weekEnd))
+        .thenReturn(2L);
+    when(mealRepository.countByUserIdAndMealDateBetween(1L, weekStart, weekEnd))
+        .thenReturn(5L);
+    when(mealRepository.sumCaloriesByUserIdAndDateBetween(1L, weekStart, weekEnd))
+        .thenReturn(4000);
+    when(workoutRepository.sumCaloriesBurntByUserIdAndDateBetween(1L, weekStart, weekEnd))
+        .thenReturn(800);
+
+    WeeklySummary saved = new WeeklySummary();
+    saved.setId(200L);
+    saved.setUser(mockUser);
+    saved.setWeekStart(weekStart);
+    saved.setWeekEnd(weekEnd);
+    saved.setWorkoutsCompleted(2);
+    saved.setMealsLogged(5);
+
+    when(weeklySummaryRepository.save(any(WeeklySummary.class))).thenReturn(saved);
+
+    // Simulate SMTP failure or exception thrown
+    doThrow(new RuntimeException("SMTP Connection refused"))
+        .when(weeklySummaryEmailService).sendWeeklySummaryEmail(any(), any(), any());
+
+    // Service should catch or suppress and still successfully return the generated summary
+    SummaryService.GenerationResult result = assertDoesNotThrow(() ->
+        summaryService.generateWeeklySummary(pastDate)
+    );
+
+    assertNotNull(result);
+    assertTrue(result.created());
+    assertEquals(200L, result.response().id());
   }
 }

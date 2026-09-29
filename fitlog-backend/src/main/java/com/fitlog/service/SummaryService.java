@@ -27,23 +27,28 @@ public class SummaryService {
 
   public record GenerationResult(WeeklySummaryResponse response, boolean created) {}
 
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SummaryService.class);
+
   private final WorkoutRepository workoutRepository;
   private final MealRepository mealRepository;
   private final GoalRepository goalRepository;
   private final WeeklySummaryRepository weeklySummaryRepository;
   private final CurrentUserService currentUserService;
+  private final WeeklySummaryEmailService weeklySummaryEmailService;
 
   public SummaryService(
       WorkoutRepository workoutRepository,
       MealRepository mealRepository,
       GoalRepository goalRepository,
       WeeklySummaryRepository weeklySummaryRepository,
-      CurrentUserService currentUserService) {
+      CurrentUserService currentUserService,
+      WeeklySummaryEmailService weeklySummaryEmailService) {
     this.workoutRepository = workoutRepository;
     this.mealRepository = mealRepository;
     this.goalRepository = goalRepository;
     this.weeklySummaryRepository = weeklySummaryRepository;
     this.currentUserService = currentUserService;
+    this.weeklySummaryEmailService = weeklySummaryEmailService;
   }
 
   @Transactional(readOnly = true)
@@ -135,6 +140,7 @@ public class SummaryService {
         user.getId(), weekStart
     );
     if (existingOpt.isPresent()) {
+      log.info("Existing weekly summary retrieved for user {}", user.getEmail());
       return new GenerationResult(WeeklySummaryResponse.fromEntity(existingOpt.get()), false);
     }
 
@@ -176,7 +182,22 @@ public class SummaryService {
     summary.setGoalMet(goalMet);
 
     WeeklySummary saved = weeklySummaryRepository.save(summary);
-    return new GenerationResult(WeeklySummaryResponse.fromEntity(saved), true);
+    WeeklySummaryResponse response = WeeklySummaryResponse.fromEntity(saved);
+
+    log.info("Weekly summary generated for user {}", user.getEmail());
+
+    // Trigger email delivery ONLY for newly generated summary
+    try {
+      weeklySummaryEmailService.sendWeeklySummaryEmail(
+          user.getEmail(),
+          user.getFullName(),
+          response
+      );
+    } catch (Exception ex) {
+      log.error("Failed to send weekly summary email for user {}: {}", user.getEmail(), ex.getMessage());
+    }
+
+    return new GenerationResult(response, true);
   }
 
   @Transactional(readOnly = true)
