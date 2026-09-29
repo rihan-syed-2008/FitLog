@@ -19,13 +19,13 @@ export default function Button({
       type={type}
       disabled={disabled || loading}
       onClick={onClick}
-      className={`btn ${variantClass} ${className} ${disabled || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`btn ${variantClass} ${disabled || loading ? 'disabled' : ''} ${className}`}
       {...props}
     >
       {loading ? (
-        <Spinner size="sm" color={variant === 'primary' ? '#032b1a' : '#10b981'} />
+        <Spinner size="sm" />
       ) : Icon ? (
-        <Icon size={18} />
+        <Icon size={16} />
       ) : null}
       {children}
     </button>

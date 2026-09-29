@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Target, User, Shield, LogOut, CheckCircle2 } from 'lucide-react';
+import { Target, User, LogOut } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { goalsApi } from '../api/goals';
 import Field from '../components/ui/Field';
@@ -10,19 +11,18 @@ import { getErrorMessage } from '../utils/errors';
 export default function Settings() {
   const { user, logout } = useAuth();
   const [weeklyTarget, setWeeklyTarget] = useState(4);
-  const [loading, setLoading] = useState(true);
-  const [savingGoal, setSavingGoal] = useState(false);
-  const [goalFeedback, setGoalFeedback] = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const [savingGoal, setSavingGoal]     = useState(false);
 
   useEffect(() => {
     async function fetchGoal() {
       try {
         const current = await goalsApi.getCurrentGoal();
-        if (current && current.weeklyWorkoutTarget) {
+        if (current?.weeklyWorkoutTarget) {
           setWeeklyTarget(current.weeklyWorkoutTarget);
         }
-      } catch (err) {
-        // Goal might not exist yet
+      } catch {
+        // No goal yet — ignore
       } finally {
         setLoading(false);
       }
@@ -32,29 +32,17 @@ export default function Settings() {
 
   const handleSaveGoal = async (e) => {
     e.preventDefault();
-    setGoalFeedback(null);
-
     const val = Number(weeklyTarget);
     if (!val || val < 1 || val > 14) {
-      setGoalFeedback({
-        type: 'error',
-        message: 'Goal must be between 1 and 14 workouts per week.'
-      });
+      toast.error('Weekly goal must be between 1 and 14 workouts.');
       return;
     }
-
     setSavingGoal(true);
     try {
       await goalsApi.upsertGoal(val);
-      setGoalFeedback({
-        type: 'success',
-        message: `Weekly goal updated to ${val} workout${val > 1 ? 's' : ''} per week!`
-      });
+      toast.success(`Weekly goal set to ${val} workout${val > 1 ? 's' : ''} per week.`);
     } catch (err) {
-      setGoalFeedback({
-        type: 'error',
-        message: getErrorMessage(err)
-      });
+      toast.error(getErrorMessage(err));
     } finally {
       setSavingGoal(false);
     }
@@ -62,66 +50,39 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
         <Spinner size="lg" />
-        <p style={{ marginTop: '16px', color: 'var(--text-dim)' }}>Loading settings...</p>
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.875rem' }}>Loading settings…</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '800px' }} className="animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28, maxWidth: 720 }} className="animate-fade-in">
       {/* Header */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--accent-purple)', fontWeight: 700, textTransform: 'uppercase' }}>
-            PREFERENCES & ACCOUNT
-          </span>
-        </div>
-        <h1 style={{ fontSize: '1.85rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-          Settings
-        </h1>
+        <div className="page-eyebrow">Preferences & Account</div>
+        <h1 className="page-title">Settings</h1>
       </div>
 
-      {/* Goal Configuration Card */}
-      <div className="glass-card" style={{ padding: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <div
-            style={{
-              padding: '10px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(139, 92, 246, 0.1)',
-              color: 'var(--accent-purple)'
-            }}
-          >
-            <Target size={22} />
+      {/* Weekly goal card */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div className="activity-icon activity-icon-track" aria-hidden="true">
+            <Target size={17} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Weekly Workout Target</h3>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-dim)' }}>
-              Configure how many workouts you aim to complete each week (1–14).
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 600, color: 'var(--ink)' }}>
+              Weekly Workout Target
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
+              How many workouts do you aim to complete each week? (1–14)
             </p>
           </div>
         </div>
 
-        {goalFeedback && (
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '18px',
-              backgroundColor: goalFeedback.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-              border: goalFeedback.type === 'success' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(244, 63, 94, 0.3)',
-              color: goalFeedback.type === 'success' ? '#34d399' : '#fb7185',
-              fontSize: '0.875rem'
-            }}
-          >
-            {goalFeedback.message}
-          </div>
-        )}
-
-        <form onSubmit={handleSaveGoal} style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '220px' }}>
+        <form onSubmit={handleSaveGoal} style={{ display: 'flex', alignItems: 'flex-end', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 200 }}>
             <Field
               label="Workouts per week"
               type="number"
@@ -129,7 +90,7 @@ export default function Settings() {
               max="14"
               value={weeklyTarget}
               onChange={(e) => setWeeklyTarget(e.target.value)}
-              helperText="Allowed range: 1 to 14"
+              helperText="Range 1–14"
               required
             />
           </div>
@@ -139,56 +100,53 @@ export default function Settings() {
         </form>
       </div>
 
-      {/* User Profile Card */}
-      <div className="glass-card" style={{ padding: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <div
-            style={{
-              padding: '10px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              color: 'var(--accent-green)'
-            }}
-          >
-            <User size={22} />
+      {/* Profile card */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div className="activity-icon activity-icon-ochre" aria-hidden="true">
+            <User size={17} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Profile Information</h3>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-dim)' }}>
-              Your account identity stored in the FitLog database
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 600, color: 'var(--ink)' }}>
+              Profile
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
+              Your account identity stored in the FitLog database.
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          <div style={{ padding: '14px', backgroundColor: '#0c1220', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>FULL NAME</span>
-            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div className="stat-tile">
+            <div className="stat-tile-label">Full Name</div>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--ink)', marginTop: 4 }}>
               {user?.fullName || 'N/A'}
-            </p>
+            </div>
           </div>
-
-          <div style={{ padding: '14px', backgroundColor: '#0c1220', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>EMAIL ADDRESS</span>
-            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
+          <div className="stat-tile">
+            <div className="stat-tile-label">Email</div>
+            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--ink)', marginTop: 4, wordBreak: 'break-all' }}>
               {user?.email || 'N/A'}
-            </p>
+            </div>
           </div>
-
-          <div style={{ padding: '14px', backgroundColor: '#0c1220', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>SYSTEM ROLE</span>
-            <div style={{ marginTop: '4px' }}>
-              <span className="badge badge-green">{user?.role || 'USER'}</span>
+          <div className="stat-tile">
+            <div className="stat-tile-label">Role</div>
+            <div style={{ marginTop: 6 }}>
+              <span className="badge badge-track">{user?.role || 'USER'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Logout Action */}
-      <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Sign out */}
+      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Sign Out of FitLog</h4>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Clears your active JWT session from this browser.</p>
+          <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '0.95rem', fontWeight: 600, color: 'var(--ink)' }}>
+            Sign Out
+          </h4>
+          <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', marginTop: 2 }}>
+            Clears your active JWT session from this browser.
+          </p>
         </div>
         <Button variant="danger" onClick={logout} icon={LogOut}>
           Sign Out

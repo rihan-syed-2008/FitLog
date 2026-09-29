@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, Compass, ArrowLeft } from 'lucide-react';
-import Button from '../components/ui/Button';
+import { MapPin, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
   return (
@@ -17,36 +16,28 @@ export default function NotFound() {
       }}
     >
       <div
-        style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '20px',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--accent-green)',
-          marginBottom: '24px'
-        }}
+        className="activity-icon activity-icon-track"
+        style={{ width: 64, height: 64, borderRadius: 'var(--radius-lg)', marginBottom: 24 }}
+        aria-hidden="true"
       >
-        <Compass size={36} />
+        <MapPin size={30} />
       </div>
 
-      <h1 style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '8px' }}>
+      <h1
+        className="num"
+        style={{ fontSize: '4rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1, marginBottom: 8 }}
+      >
         404
       </h1>
-      <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '12px' }}>
-        Off Track! Page Not Found
+      <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 10 }}>
+        Off track — page not found
       </h2>
-      <p style={{ color: 'var(--text-dim)', maxWidth: '420px', marginBottom: '28px', lineHeight: 1.5 }}>
+      <p style={{ color: 'var(--ink-soft)', maxWidth: 400, lineHeight: 1.55, marginBottom: 28, fontSize: '0.925rem' }}>
         The route you are looking for doesn't exist or has moved. Let's get you back on course.
       </p>
 
-      <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-        <Button variant="primary">
-          <ArrowLeft size={16} /> Return to Dashboard
-        </Button>
+      <Link to="/dashboard" className="btn btn-primary">
+        <ArrowLeft size={16} aria-hidden="true" /> Return to Dashboard
       </Link>
     </div>
   );

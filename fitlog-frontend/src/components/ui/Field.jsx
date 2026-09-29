@@ -15,37 +15,30 @@ export default function Field({
   disabled = false,
   className = '',
   helperText,
-  icon: Icon
+  icon: Icon,
+  ...props
 }) {
-  const inputId = id || `field-${label ? label.toLowerCase().replace(/\s+/g, '-') : Math.random().toString(36).slice(2, 7)}`;
+  const inputId =
+    id ||
+    `field-${label ? label.toLowerCase().replace(/\s+/g, '-') : Math.random().toString(36).slice(2, 7)}`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }} className={className}>
+    <div className={`field-group ${className}`}>
       {label && (
-        <label
-          htmlFor={inputId}
-          style={{
-            fontSize: '0.825rem',
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
+        <label htmlFor={inputId} className="field-label">
           <span>
             {label}
-            {required && <span style={{ color: 'var(--accent-rose)', marginLeft: '4px' }}>*</span>}
+            {required && <span className="required-mark">*</span>}
           </span>
-          {helperText && <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{helperText}</span>}
+          {helperText && <span className="helper-text">{helperText}</span>}
         </label>
       )}
 
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div className="field-input-icon-wrap">
         {Icon && (
-          <div style={{ position: 'absolute', left: '12px', color: 'var(--text-dim)', pointerEvents: 'none' }}>
-            <Icon size={16} />
-          </div>
+          <span className="field-icon">
+            <Icon size={15} />
+          </span>
         )}
         <input
           id={inputId}
@@ -58,26 +51,12 @@ export default function Field({
           max={max}
           step={step}
           disabled={disabled}
-          className="glass-input"
-          style={{
-            paddingLeft: Icon ? '38px' : '14px',
-            borderColor: error ? 'var(--accent-rose)' : undefined
-          }}
+          className={`field-input${Icon ? ' has-icon' : ''}${error ? ' error' : ''}`}
+          {...props}
         />
       </div>
 
-      {error && (
-        <span
-          style={{
-            fontSize: '0.775rem',
-            color: 'var(--accent-rose)',
-            fontWeight: 500,
-            marginTop: '2px'
-          }}
-        >
-          {error}
-        </span>
-      )}
+      {error && <span className="field-error">{error}</span>}
     </div>
   );
 }

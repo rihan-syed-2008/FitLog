@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Flame, User, Mail, Lock, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Field from '../components/ui/Field';
 import Button from '../components/ui/Button';
@@ -26,10 +26,8 @@ export default function Register() {
     }
 
     setLoading(true);
-
     try {
       await register({ fullName, email, password });
-      // Automatically log the new user in
       await login({ email, password });
       navigate('/dashboard');
     } catch (err) {
@@ -40,68 +38,27 @@ export default function Register() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-primary)',
-        padding: '24px'
-      }}
-    >
-      <div
-        className="glass-card animate-fade-in"
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          padding: '36px 32px'
-        }}
-      >
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#032b1a',
-              marginBottom: '16px',
-              boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
-            }}
-          >
-            <Flame size={26} />
+    <div className="auth-page">
+      <div className="auth-card animate-fade-in">
+        {/* Brand mark */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div className="auth-brand-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
           </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Start Your Journey
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)', marginTop: '4px' }}>
-            Join FitLog and take command of your fitness data
-          </p>
+          <h1 className="auth-title">Start your journey</h1>
+          <p className="auth-sub">Create a free FitLog account</p>
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: '12px 14px',
-              borderRadius: '8px',
-              backgroundColor: 'rgba(244, 63, 94, 0.1)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
-              color: '#fb7185',
-              fontSize: '0.85rem',
-              fontWeight: 500,
-              marginBottom: '20px'
-            }}
-          >
+          <div className="error-banner" style={{ marginBottom: 20 }} role="alert">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }} noValidate>
           <Field
             label="Full Name"
             placeholder="Alex Johnson"
@@ -110,17 +67,15 @@ export default function Register() {
             icon={User}
             required
           />
-
           <Field
-            label="Email Address"
+            label="Email"
             type="email"
-            placeholder="alex@fitlog.com"
+            placeholder="alex@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             icon={Mail}
             required
           />
-
           <Field
             label="Password"
             type="password"
@@ -128,23 +83,18 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             icon={Lock}
-            helperText="Minimum 8 characters"
+            helperText="Min 8 chars"
             required
           />
 
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading}
-            style={{ width: '100%', marginTop: '6px', padding: '12px' }}
-          >
-            Create Account <ArrowRight size={18} />
+          <Button type="submit" variant="primary" loading={loading} style={{ width: '100%', marginTop: 6 }}>
+            Create Account
           </Button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+        <p style={{ textAlign: 'center', marginTop: 22, fontSize: '0.875rem', color: 'var(--ink-soft)' }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--accent-green)', fontWeight: 600, textDecoration: 'none' }}>
+          <Link to="/login" className="auth-link">
             Sign in
           </Link>
         </p>

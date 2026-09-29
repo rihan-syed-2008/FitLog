@@ -11,21 +11,16 @@ export default function Select({
   disabled = false,
   className = ''
 }) {
-  const selectId = id || `select-${label ? label.toLowerCase().replace(/\s+/g, '-') : Math.random().toString(36).slice(2, 7)}`;
+  const selectId =
+    id ||
+    `select-${label ? label.toLowerCase().replace(/\s+/g, '-') : Math.random().toString(36).slice(2, 7)}`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }} className={className}>
+    <div className={`field-group ${className}`}>
       {label && (
-        <label
-          htmlFor={selectId}
-          style={{
-            fontSize: '0.825rem',
-            fontWeight: 600,
-            color: 'var(--text-muted)'
-          }}
-        >
+        <label htmlFor={selectId} className="field-label">
           {label}
-          {required && <span style={{ color: 'var(--accent-rose)', marginLeft: '4px' }}>*</span>}
+          {required && <span className="required-mark">*</span>}
         </label>
       )}
 
@@ -35,29 +30,20 @@ export default function Select({
         onChange={onChange}
         required={required}
         disabled={disabled}
-        className="glass-input"
-        style={{
-          borderColor: error ? 'var(--accent-rose)' : undefined,
-          cursor: 'pointer',
-          backgroundColor: '#0c1220'
-        }}
+        className={`field-select${error ? ' error' : ''}`}
       >
         {options.map((opt) => {
           const val = typeof opt === 'object' ? opt.value : opt;
           const text = typeof opt === 'object' ? opt.label : opt;
           return (
-            <option key={val} value={val} style={{ backgroundColor: '#111827', color: '#f8fafc' }}>
+            <option key={val} value={val}>
               {text}
             </option>
           );
         })}
       </select>
 
-      {error && (
-        <span style={{ fontSize: '0.775rem', color: 'var(--accent-rose)', fontWeight: 500 }}>
-          {error}
-        </span>
-      )}
+      {error && <span className="field-error">{error}</span>}
     </div>
   );
 }

@@ -1,58 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dumbbell,
-  Plus,
-  Search,
-  Filter,
-  Calendar,
-  Clock,
-  Flame,
-  Trash2,
-  Edit2
-} from 'lucide-react';
+import { Dumbbell, Plus, Search, Calendar, Pencil, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { workoutsApi } from '../api/workouts';
 import { useDebounce } from '../hooks/useDebounce';
 import SlideOver from '../components/ui/SlideOver';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import WorkoutForm from '../components/WorkoutForm';
 import Pagination from '../components/ui/Pagination';
 import EmptyState from '../components/ui/EmptyState';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
+import ActivityIcon from '../components/icons/ActivityIcon';
 import { formatDatePretty } from '../utils/dates';
 import { formatCalories, formatDuration, formatWorkoutType } from '../utils/format';
 import { getErrorMessage } from '../utils/errors';
 
+const WORKOUT_TYPE_OPTIONS = [
+  { value: '',         label: 'All Types' },
+  { value: 'RUNNING',  label: 'Running' },
+  { value: 'WALKING',  label: 'Walking' },
+  { value: 'CYCLING',  label: 'Cycling' },
+  { value: 'SWIMMING', label: 'Swimming' },
+  { value: 'STRENGTH', label: 'Strength' },
+  { value: 'YOGA',     label: 'Yoga' },
+  { value: 'HIIT',     label: 'HIIT' },
+  { value: 'OTHER',    label: 'Other' }
+];
+
 export default function Workouts() {
-  const [workouts, setWorkouts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [workouts, setWorkouts]           = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState('');
+  const [page, setPage]                   = useState(0);
+  const [totalPages, setTotalPages]       = useState(1);
   const [totalElements, setTotalElements] = useState(0);
 
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [typeFilter, setTypeFilter]   = useState('');
+  const [dateFilter, setDateFilter]   = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
-  // Drawer form states
-  const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
+  const [slideOverOpen, setSlideOverOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState(null);
-  const [formLoading, setFormLoading] = useState(false);
+  const [formLoading, setFormLoading]     = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deletingId, setDeletingId]   = useState(null);
 
   const fetchWorkouts = async () => {
     setLoading(true);
     setError('');
     try {
-      const params = {
+      const res = await workoutsApi.getWorkouts({
         page,
         size: 8,
         search: debouncedSearch || undefined,
         workoutType: typeFilter || undefined,
         date: dateFilter || undefined
-      };
-      const res = await workoutsApi.getWorkouts(params);
+      });
       setWorkouts(res.content || []);
       setTotalPages(res.totalPages || 1);
       setTotalElements(res.totalElements || 0);
@@ -63,308 +68,212 @@ export default function Workouts() {
     }
   };
 
-  useEffect(() => {
-    fetchWorkouts();
-  }, [page, debouncedSearch, typeFilter, dateFilter]);
+  useEffect(() => { fetchWorkouts(); }, [page, debouncedSearch, typeFilter, dateFilter]);
 
-  const handleOpenCreate = () => {
-    setEditingWorkout(null);
-    setIsSlideOverOpen(true);
-  };
+  const openCreate = () => { setEditingWorkout(null); setSlideOverOpen(true); };
+  const openEdit   = (w) => { setEditingWorkout(w);   setSlideOverOpen(true); };
 
-  const handleOpenEdit = (workout) => {
-    setEditingWorkout(workout);
-    setIsSlideOverOpen(true);
-  };
-
-  const handleSubmitForm = async (data) => {
+  const handleSubmit = async (data) => {
     setFormLoading(true);
     try {
       if (editingWorkout) {
         await workoutsApi.updateWorkout(editingWorkout.id, data);
+        toast.success('Workout updated!');
       } else {
         await workoutsApi.createWorkout(data);
+        toast.success('Workout logged!');
       }
-      setIsSlideOverOpen(false);
+      setSlideOverOpen(false);
       setEditingWorkout(null);
       await fetchWorkouts();
     } catch (err) {
-      alert(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     } finally {
       setFormLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this workout?')) return;
+  const requestDelete = (id) => { setDeletingId(id); setConfirmOpen(true); };
+
+  const handleDelete = async () => {
+    setConfirmOpen(false);
     try {
-      await workoutsApi.deleteWorkout(id);
+      await workoutsApi.deleteWorkout(deletingId);
+      toast.success('Workout deleted.');
       await fetchWorkouts();
     } catch (err) {
-      alert(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: 700, textTransform: 'uppercase' }}>
-              TRAINING LOG
-            </span>
-          </div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Workouts
-          </h1>
-        </div>
+  const clearFilters = () => { setSearchTerm(''); setTypeFilter(''); setDateFilter(''); setPage(0); };
+  const hasFilters = searchTerm || typeFilter || dateFilter;
 
-        <Button variant="primary" onClick={handleOpenCreate} icon={Plus}>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
+      {/* Header */}
+      <div className="page-header">
+        <div>
+          <div className="page-eyebrow">Training Log</div>
+          <h1 className="page-title">Workouts</h1>
+        </div>
+        <Button variant="primary" onClick={openCreate} icon={Plus}>
           Log Workout
         </Button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div
-        className="glass-card"
-        style={{
-          padding: '16px 20px',
-          display: 'flex',
-          gap: '14px',
-          alignItems: 'center',
-          flexWrap: 'wrap'
-        }}
-      >
+      {/* Filter bar */}
+      <div className="filter-bar">
         {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
-          <Search
-            size={18}
-            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}
-          />
+        <div className="filter-search-wrap">
+          <span className="filter-search-icon" aria-hidden="true">
+            <Search size={15} />
+          </span>
           <input
             type="text"
-            className="glass-input"
-            style={{ paddingLeft: '38px' }}
-            placeholder="Search workout notes..."
+            className="filter-input"
+            placeholder="Search notes…"
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(0);
-            }}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+            aria-label="Search workouts"
           />
         </div>
 
-        {/* Type Filter */}
-        <div style={{ minWidth: '160px' }}>
-          <select
-            className="glass-input"
-            style={{ cursor: 'pointer', backgroundColor: '#0c1220' }}
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(0);
-            }}
-          >
-            <option value="">All Workout Types</option>
-            <option value="RUNNING">Running</option>
-            <option value="WALKING">Walking</option>
-            <option value="CYCLING">Cycling</option>
-            <option value="SWIMMING">Swimming</option>
-            <option value="STRENGTH">Strength</option>
-            <option value="YOGA">Yoga</option>
-            <option value="HIIT">HIIT</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
+        {/* Type filter */}
+        <select
+          className="field-select"
+          style={{ minWidth: 150 }}
+          value={typeFilter}
+          onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }}
+          aria-label="Filter by type"
+        >
+          {WORKOUT_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
 
-        {/* Date Filter */}
-        <div style={{ minWidth: '160px' }}>
-          <input
-            type="date"
-            className="glass-input"
-            value={dateFilter}
-            onChange={(e) => {
-              setDateFilter(e.target.value);
-              setPage(0);
-            }}
-          />
-        </div>
+        {/* Date filter */}
+        <input
+          type="date"
+          className="field-input"
+          style={{ minWidth: 150 }}
+          value={dateFilter}
+          onChange={(e) => { setDateFilter(e.target.value); setPage(0); }}
+          aria-label="Filter by date"
+        />
 
-        {(searchTerm || typeFilter || dateFilter) && (
-          <Button
-            variant="ghost"
-            style={{ fontSize: '0.825rem' }}
-            onClick={() => {
-              setSearchTerm('');
-              setTypeFilter('');
-              setDateFilter('');
-              setPage(0);
-            }}
-          >
-            Clear Filters
+        {hasFilters && (
+          <Button variant="ghost" className="btn-sm" onClick={clearFilters}>
+            Clear
           </Button>
         )}
       </div>
 
-      {/* Error message */}
-      {error && (
-        <div
-          style={{
-            padding: '14px',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(244, 63, 94, 0.1)',
-            border: '1px solid rgba(244, 63, 94, 0.3)',
-            color: '#fb7185'
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className="error-banner" role="alert">{error}</div>}
 
-      {/* Workout Grid / List */}
+      {/* List */}
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 12 }}>
           <Spinner size="lg" />
-          <p style={{ marginTop: '12px', color: 'var(--text-dim)' }}>Loading workouts...</p>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.875rem' }}>Loading workouts…</p>
         </div>
       ) : workouts.length === 0 ? (
         <EmptyState
           icon={Dumbbell}
           title="No workouts found"
-          description={
-            searchTerm || typeFilter || dateFilter
-              ? 'No sessions match your search filters.'
-              : 'You haven’t logged any workouts yet. Time to crush a session!'
-          }
-          actionText={!searchTerm && !typeFilter && !dateFilter ? 'Log Your First Workout' : undefined}
-          onAction={handleOpenCreate}
+          description={hasFilters ? 'No sessions match your filters.' : "You haven't logged any workouts yet. Time to crush a session!"}
+          actionText={!hasFilters ? 'Log Your First Workout' : undefined}
+          onAction={openCreate}
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {workouts.map((w) => (
-            <div
-              key={w.id}
-              className="glass-card"
-              style={{
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '14px'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span className="badge badge-green">
-                    {formatWorkoutType(w.workoutType)}
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Calendar size={13} /> {formatDatePretty(w.workoutDate)}
+            <div key={w.id} className="card card-sm" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {/* Activity icon */}
+              <div className="activity-icon activity-icon-track" style={{ width: 40, height: 40, flexShrink: 0 }} aria-hidden="true">
+                <ActivityIcon type={w.workoutType} size={18} />
+              </div>
+
+              {/* Main info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
+                  <span className="badge badge-track">{formatWorkoutType(w.workoutType)}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                    <Calendar size={12} aria-hidden="true" /> {formatDatePretty(w.workoutDate)}
                   </span>
                 </div>
-
                 {w.notes ? (
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '6px', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--ink)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {w.notes}
                   </p>
                 ) : (
-                  <p style={{ fontSize: '0.825rem', color: 'var(--text-dim)', fontStyle: 'italic', marginTop: '6px' }}>
-                    No notes recorded
-                  </p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', fontStyle: 'italic', marginTop: 2 }}>No notes</p>
                 )}
               </div>
 
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    padding: '10px 14px',
-                    backgroundColor: '#0c1220',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    marginBottom: '12px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Clock size={15} color="var(--accent-cyan)" />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                      {formatDuration(w.durationMinutes)}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Flame size={15} color="var(--accent-green)" />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399' }}>
-                      {formatCalories(w.caloriesBurnt)}
-                    </span>
-                  </div>
+              {/* Stats */}
+              <div style={{ display: 'flex', gap: 20, flexShrink: 0, textAlign: 'right' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--ink-soft)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Duration</div>
+                  <div className="num" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink)' }}>{formatDuration(w.durationMinutes)}</div>
                 </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--ink-soft)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Burned</div>
+                  <div className="num" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--track)' }}>{formatCalories(w.caloriesBurnt)}</div>
+                </div>
+              </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button
-                    onClick={() => handleOpenEdit(w)}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '6px',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      fontSize: '0.775rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    <Edit2 size={13} /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(w.id)}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'rgba(244, 63, 94, 0.08)',
-                      border: '1px solid rgba(244, 63, 94, 0.2)',
-                      borderRadius: '6px',
-                      color: '#fb7185',
-                      cursor: 'pointer',
-                      fontSize: '0.775rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    <Trash2 size={13} /> Delete
-                  </button>
-                </div>
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() => openEdit(w)}
+                  className="btn btn-ghost btn-sm btn-icon"
+                  aria-label={`Edit ${formatWorkoutType(w.workoutType)}`}
+                  title="Edit"
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  onClick={() => requestDelete(w.id)}
+                  className="btn btn-danger btn-sm btn-icon"
+                  aria-label={`Delete ${formatWorkoutType(w.workoutType)}`}
+                  title="Delete"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Pagination */}
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        totalElements={totalElements}
-        onPageChange={(newPage) => setPage(newPage)}
-      />
+      <Pagination page={page} totalPages={totalPages} totalElements={totalElements} onPageChange={setPage} />
 
-      {/* Form Drawer */}
+      {/* Slide-over form */}
       <SlideOver
-        isOpen={isSlideOverOpen}
-        onClose={() => setIsSlideOverOpen(false)}
-        title={editingWorkout ? 'Edit Workout' : 'Log New Workout'}
+        isOpen={slideOverOpen}
+        onClose={() => setSlideOverOpen(false)}
+        title={editingWorkout ? 'Edit Workout' : 'Log Workout'}
       >
         <WorkoutForm
           initialData={editingWorkout}
-          onSubmit={handleSubmitForm}
-          onCancel={() => setIsSlideOverOpen(false)}
+          onSubmit={handleSubmit}
+          onCancel={() => setSlideOverOpen(false)}
           loading={formLoading}
         />
       </SlideOver>
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title="Delete workout?"
+        message="This will permanently remove the workout record. This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => { setConfirmOpen(false); setDeletingId(null); }}
+      />
     </div>
   );
 }

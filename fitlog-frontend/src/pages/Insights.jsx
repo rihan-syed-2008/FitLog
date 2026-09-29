@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  LineChart,
-  Calendar,
-  Sparkles,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  TrendingUp,
-  History
-} from 'lucide-react';
+import { TrendingUp, History, RefreshCw, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { summariesApi } from '../api/summaries';
 import { goalsApi } from '../api/goals';
 import TrendChart from '../components/TrendChart';
@@ -19,14 +11,14 @@ import { getTodayString } from '../utils/dates';
 import { getErrorMessage } from '../utils/errors';
 
 export default function Insights() {
-  const [trendData, setTrendData] = useState([]);
-  const [summaries, setSummaries] = useState([]);
-  const [goal, setGoal] = useState(null);
+  const [trendData, setTrendData]   = useState([]);
+  const [summaries, setSummaries]   = useState([]);
+  const [goal, setGoal]             = useState(null);
   const [weeksCount, setWeeksCount] = useState(8);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]       = useState(true);
   const [genLoading, setGenLoading] = useState(false);
   const [selectedWeekDate, setSelectedWeekDate] = useState(getTodayString());
-  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: '' }
+  const [feedback, setFeedback]     = useState(null); // { type: 'success'|'info'|'error', message }
 
   const loadData = async () => {
     setLoading(true);
@@ -36,7 +28,6 @@ export default function Insights() {
         summariesApi.getWeeklySummaries(),
         goalsApi.getCurrentGoal()
       ]);
-
       setTrendData(trend || []);
       setSummaries(summaryList || []);
       setGoal(currentGoal);
@@ -47,9 +38,7 @@ export default function Insights() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [weeksCount]);
+  useEffect(() => { loadData(); }, [weeksCount]);
 
   const handleGenerateSummary = async () => {
     setGenLoading(true);
@@ -59,8 +48,9 @@ export default function Insights() {
       if (res.status === 201) {
         setFeedback({
           type: 'success',
-          message: `Success! New weekly summary #${res.data.id} generated (${res.data.workoutsCompleted} workouts, ${res.data.mealsLogged} meals).`
+          message: `Summary #${res.data.id} created — ${res.data.workoutsCompleted} workouts, ${res.data.mealsLogged} meals.`
         });
+        toast.success('Weekly summary generated!');
       } else {
         setFeedback({
           type: 'info',
@@ -69,7 +59,9 @@ export default function Insights() {
       }
       await loadData();
     } catch (err) {
-      setFeedback({ type: 'error', message: getErrorMessage(err) });
+      const msg = getErrorMessage(err);
+      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setGenLoading(false);
     }
@@ -77,44 +69,31 @@ export default function Insights() {
 
   if (loading && trendData.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12 }}>
         <Spinner size="lg" />
-        <p style={{ marginTop: '16px', color: 'var(--text-dim)' }}>Crunching your performance metrics...</p>
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.875rem' }}>Crunching your metrics…</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }} className="animate-fade-in">
-      {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }} className="animate-fade-in">
+      {/* Header */}
+      <div className="page-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)', fontWeight: 700, textTransform: 'uppercase' }}>
-              ANALYTICS & METRICS
-            </span>
-          </div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Performance Insights
-          </h1>
+          <div className="page-eyebrow">Analytics & Metrics</div>
+          <h1 className="page-title">Insights</h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>Trend Range:</span>
+        {/* Week range selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', fontWeight: 500 }}>Range:</span>
           {[4, 8, 12, 26].map((w) => (
             <button
               key={w}
               onClick={() => setWeeksCount(w)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: weeksCount === w ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
-                backgroundColor: weeksCount === w ? 'rgba(6, 182, 212, 0.15)' : '#0c1220',
-                color: weeksCount === w ? '#38bdf8' : 'var(--text-muted)',
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                cursor: 'pointer'
-              }}
+              className={`week-pill${weeksCount === w ? ' active' : ''}`}
+              aria-pressed={weeksCount === w}
             >
               {w}w
             </button>
@@ -122,129 +101,90 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* Feedback Banner */}
+      {/* Feedback banner */}
       {feedback && (
         <div
-          style={{
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor:
-              feedback.type === 'success'
-                ? 'rgba(16, 185, 129, 0.1)'
-                : feedback.type === 'error'
-                ? 'rgba(244, 63, 94, 0.1)'
-                : 'rgba(6, 182, 212, 0.1)',
-            border:
-              feedback.type === 'success'
-                ? '1px solid rgba(16, 185, 129, 0.3)'
-                : feedback.type === 'error'
-                ? '1px solid rgba(244, 63, 94, 0.3)'
-                : '1px solid rgba(6, 182, 212, 0.3)',
-            color:
-              feedback.type === 'success'
-                ? '#34d399'
-                : feedback.type === 'error'
-                ? '#fb7185'
-                : '#38bdf8',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}
+          className={
+            feedback.type === 'success' ? 'feedback-success'
+            : feedback.type === 'info'  ? 'feedback-info'
+            : 'error-banner'
+          }
+          role={feedback.type === 'error' ? 'alert' : 'status'}
         >
-          {feedback.type === 'success' && <CheckCircle2 size={18} />}
-          {feedback.type === 'error' && <AlertCircle size={18} />}
-          {feedback.type === 'info' && <RefreshCw size={18} />}
+          {feedback.type === 'success' && <CheckCircle2 size={16} aria-hidden="true" />}
+          {feedback.type === 'error'   && <AlertCircle  size={16} aria-hidden="true" />}
+          {feedback.type === 'info'    && <Info         size={16} aria-hidden="true" />}
           <span>{feedback.message}</span>
         </div>
       )}
 
-      {/* Recharts Trend Chart Widget */}
-      <div className="glass-card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                padding: '8px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                color: 'var(--accent-green)'
-              }}
-            >
-              <TrendingUp size={20} />
+      {/* Trend chart */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="activity-icon activity-icon-track" aria-hidden="true">
+              <TrendingUp size={17} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Weekly Workout Frequency</h3>
-              <p style={{ fontSize: '0.775rem', color: 'var(--text-dim)' }}>
-                Comparing completed sessions against target goal across {weeksCount} weeks
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 600, color: 'var(--ink)' }}>
+                Weekly Workout Frequency
+              </h3>
+              <p style={{ fontSize: '0.775rem', color: 'var(--ink-soft)' }}>
+                Completed vs target over {weeksCount} weeks
               </p>
             </div>
           </div>
-
           {goal && (
-            <span className="badge badge-purple">
-              Active Goal: {goal.weeklyWorkoutTarget} / week
+            <span className="badge badge-ochre">
+              Goal: {goal.weeklyWorkoutTarget} / week
             </span>
           )}
         </div>
-
         <TrendChart data={trendData} goalTarget={goal?.weeklyWorkoutTarget || 0} />
       </div>
 
-      {/* Weekly Summary Generator Card */}
-      <div className="glass-card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+      {/* Generate summary */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Sparkles size={18} color="var(--accent-green)" />
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Generate Official Weekly Summary</h3>
-            </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-              Computes and seals a weekly report enforcing business rules (BR8, BR9, BR10).
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
+              Generate Weekly Summary
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>
+              Seals a weekly report enforcing business rules (BR8, BR9, BR10).
             </p>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <input
               type="date"
-              className="glass-input"
+              className="field-input"
               style={{ width: 'auto' }}
               value={selectedWeekDate}
               onChange={(e) => setSelectedWeekDate(e.target.value)}
+              aria-label="Select week date for summary"
             />
-            <Button
-              variant="primary"
-              onClick={handleGenerateSummary}
-              loading={genLoading}
-              icon={RefreshCw}
-            >
-              Generate Summary
+            <Button variant="primary" onClick={handleGenerateSummary} loading={genLoading} icon={RefreshCw}>
+              Generate
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Historical Stored Summaries */}
-      <div className="glass-card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <div
-            style={{
-              padding: '8px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(6, 182, 212, 0.1)',
-              color: 'var(--accent-cyan)'
-            }}
-          >
-            <History size={20} />
+      {/* Historical summaries */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div className="activity-icon activity-icon-track" aria-hidden="true">
+            <History size={17} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Historical Weekly Records</h3>
-            <p style={{ fontSize: '0.775rem', color: 'var(--text-dim)' }}>
-              Permanently archived weekly performance summaries
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 600, color: 'var(--ink)' }}>
+              Historical Weekly Records
+            </h3>
+            <p style={{ fontSize: '0.775rem', color: 'var(--ink-soft)' }}>
+              Permanently archived performance summaries
             </p>
           </div>
         </div>
-
         <WeeklySummaryList summaries={summaries} />
       </div>
     </div>

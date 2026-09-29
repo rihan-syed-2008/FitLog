@@ -13,113 +13,122 @@ import {
 } from 'recharts';
 import { formatDatePretty } from '../utils/dates';
 
+const CustomTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  const point = payload[0].payload;
+
+  return (
+    <div
+      style={{
+        background: 'var(--paper-raised)',
+        border: '1px solid var(--rule)',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 14px',
+        boxShadow: '0 4px 16px rgba(27,37,33,0.12)',
+        fontFamily: 'var(--font-ui)',
+        fontSize: '0.85rem',
+        minWidth: 160
+      }}
+    >
+      <p style={{ color: 'var(--ink-soft)', marginBottom: 6 }}>
+        Week of {point.formattedWeek}
+      </p>
+      <p style={{ fontWeight: 700, color: 'var(--track)' }}>
+        Workouts: {point.workoutsCompleted}
+      </p>
+      {point.goal > 0 && (
+        <p style={{ color: 'var(--ochre)', marginTop: 2 }}>
+          Target: {point.goal}
+        </p>
+      )}
+      {point.totalCaloriesIn > 0 && (
+        <p style={{ color: 'var(--ochre)', marginTop: 2 }}>
+          Intake: {point.totalCaloriesIn} kcal
+        </p>
+      )}
+      {point.totalCaloriesOut > 0 && (
+        <p style={{ color: 'var(--track)', marginTop: 2 }}>
+          Burned: {point.totalCaloriesOut} kcal
+        </p>
+      )}
+    </div>
+  );
+};
+
 export default function TrendChart({ data = [], goalTarget = 0 }) {
   if (!data || data.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)' }}>
-        No trend data available.
+      <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--ink-soft)' }}>
+        No trend data available yet.
       </div>
     );
   }
 
-  // Format data for Recharts
   const chartData = data.map((item) => ({
     ...item,
     formattedWeek: formatDatePretty(item.weekStart),
     goal: item.goalTarget || goalTarget || 0
   }));
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const point = payload[0].payload;
-      return (
-        <div
-          style={{
-            backgroundColor: '#0c1220',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 16px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-          }}
-        >
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '6px' }}>
-            Week of {point.formattedWeek}
-          </p>
-          <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#34d399' }}>
-            Workouts Completed: {point.workoutsCompleted}
-          </p>
-          {point.goal > 0 && (
-            <p style={{ fontSize: '0.85rem', color: '#a78bfa' }}>
-              Target: {point.goal} workouts
-            </p>
-          )}
-          {point.totalCaloriesIn > 0 && (
-            <p style={{ fontSize: '0.8rem', color: '#fb923c', marginTop: '4px' }}>
-              Intake: {point.totalCaloriesIn} kcal
-            </p>
-          )}
-          {point.totalCaloriesOut > 0 && (
-            <p style={{ fontSize: '0.8rem', color: '#38bdf8' }}>
-              Burned: {point.totalCaloriesOut} kcal
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div style={{ width: '100%', height: 320 }}>
+    <div style={{ width: '100%', height: 300 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: -10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
+        <ComposedChart data={chartData} margin={{ top: 16, right: 16, bottom: 16, left: -12 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" vertical={false} />
           <XAxis
             dataKey="formattedWeek"
-            stroke="#64748b"
-            fontSize={12}
+            stroke="var(--rule)"
+            tick={{ fill: 'var(--ink-soft)', fontSize: 11, fontFamily: 'var(--font-ui)' }}
             tickLine={false}
+            axisLine={false}
           />
           <YAxis
-            stroke="#64748b"
-            fontSize={12}
-            allowDecimals={false}
+            stroke="var(--rule)"
+            tick={{ fill: 'var(--ink-soft)', fontSize: 11, fontFamily: 'var(--font-ui)' }}
             tickLine={false}
+            axisLine={false}
+            allowDecimals={false}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
-            formatter={(value) => <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{value}</span>}
+            wrapperStyle={{ paddingTop: 8 }}
+            formatter={(value) => (
+              <span style={{ color: 'var(--ink-soft)', fontSize: '0.82rem', fontFamily: 'var(--font-ui)' }}>
+                {value}
+              </span>
+            )}
           />
           {goalTarget > 0 && (
             <ReferenceLine
               y={goalTarget}
-              stroke="#8b5cf6"
-              strokeDasharray="4 4"
-              label={{ value: 'Target', fill: '#a78bfa', fontSize: 12, position: 'right' }}
+              stroke="var(--ochre)"
+              strokeDasharray="5 4"
+              label={{
+                value: 'Goal',
+                fill: 'var(--ochre)',
+                fontSize: 11,
+                fontFamily: 'var(--font-ui)',
+                position: 'right'
+              }}
             />
           )}
           <Bar
             dataKey="workoutsCompleted"
-            name="Workouts Completed"
-            fill="url(#workoutBarGradient)"
-            radius={[6, 6, 0, 0]}
-            maxBarSize={45}
+            name="Workouts"
+            fill="var(--track)"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={40}
+            opacity={0.85}
           />
           <Line
             type="monotone"
             dataKey="goal"
-            name="Weekly Goal"
-            stroke="#8b5cf6"
+            name="Target"
+            stroke="var(--ochre)"
             strokeWidth={2}
-            dot={{ r: 4, fill: '#8b5cf6' }}
+            dot={{ r: 3, fill: 'var(--ochre)', strokeWidth: 0 }}
+            activeDot={{ r: 5 }}
           />
-          <defs>
-            <linearGradient id="workoutBarGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="100%" stopColor="#059669" />
-            </linearGradient>
-          </defs>
         </ComposedChart>
       </ResponsiveContainer>
     </div>

@@ -5,14 +5,14 @@ import Button from './ui/Button';
 import { getTodayString } from '../utils/dates';
 
 const WORKOUT_TYPES = [
-  { value: 'RUNNING', label: 'Running' },
-  { value: 'WALKING', label: 'Walking' },
-  { value: 'CYCLING', label: 'Cycling' },
+  { value: 'RUNNING',  label: 'Running' },
+  { value: 'WALKING',  label: 'Walking' },
+  { value: 'CYCLING',  label: 'Cycling' },
   { value: 'SWIMMING', label: 'Swimming' },
   { value: 'STRENGTH', label: 'Strength Training' },
-  { value: 'YOGA', label: 'Yoga' },
-  { value: 'HIIT', label: 'HIIT' },
-  { value: 'OTHER', label: 'Other' }
+  { value: 'YOGA',     label: 'Yoga' },
+  { value: 'HIIT',     label: 'HIIT' },
+  { value: 'OTHER',    label: 'Other' }
 ];
 
 export default function WorkoutForm({ initialData, onSubmit, onCancel, loading }) {
@@ -29,11 +29,11 @@ export default function WorkoutForm({ initialData, onSubmit, onCancel, loading }
   useEffect(() => {
     if (initialData) {
       setFormData({
-        workoutType: initialData.workoutType || 'RUNNING',
-        notes: initialData.notes || '',
+        workoutType:     initialData.workoutType    || 'RUNNING',
+        notes:           initialData.notes          || '',
         durationMinutes: initialData.durationMinutes || 30,
-        caloriesBurnt: initialData.caloriesBurnt ?? 250,
-        workoutDate: initialData.workoutDate || getTodayString()
+        caloriesBurnt:   initialData.caloriesBurnt  ?? 250,
+        workoutDate:     initialData.workoutDate     || getTodayString()
       });
     }
   }, [initialData]);
@@ -42,10 +42,10 @@ export default function WorkoutForm({ initialData, onSubmit, onCancel, loading }
     const errs = {};
     if (!formData.workoutType) errs.workoutType = 'Workout type is required';
     if (!formData.durationMinutes || formData.durationMinutes < 1 || formData.durationMinutes > 1440) {
-      errs.durationMinutes = 'Duration must be between 1 and 1440 minutes';
+      errs.durationMinutes = 'Duration must be 1–1440 minutes';
     }
     if (formData.caloriesBurnt === undefined || formData.caloriesBurnt === null || formData.caloriesBurnt < 0) {
-      errs.caloriesBurnt = 'Calories burnt must be at least 0';
+      errs.caloriesBurnt = 'Calories burnt must be ≥ 0';
     }
     if (!formData.workoutDate) {
       errs.workoutDate = 'Workout date is required';
@@ -56,45 +56,46 @@ export default function WorkoutForm({ initialData, onSubmit, onCancel, loading }
     return Object.keys(errs).length === 0;
   };
 
+  const set = (key) => (e) => setFormData((prev) => ({ ...prev, [key]: e.target.value }));
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
     onSubmit({
       ...formData,
       durationMinutes: Number(formData.durationMinutes),
-      caloriesBurnt: Number(formData.caloriesBurnt)
+      caloriesBurnt:   Number(formData.caloriesBurnt)
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }} noValidate>
       <Select
         label="Workout Type"
         value={formData.workoutType}
-        onChange={(e) => setFormData({ ...formData, workoutType: e.target.value })}
+        onChange={set('workoutType')}
         options={WORKOUT_TYPES}
         error={errors.workoutType}
         required
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <Field
-          label="Duration (minutes)"
+          label="Duration (min)"
           type="number"
           min="1"
           max="1440"
           value={formData.durationMinutes}
-          onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
+          onChange={set('durationMinutes')}
           error={errors.durationMinutes}
           required
         />
-
         <Field
           label="Calories Burnt"
           type="number"
           min="0"
           value={formData.caloriesBurnt}
-          onChange={(e) => setFormData({ ...formData, caloriesBurnt: e.target.value })}
+          onChange={set('caloriesBurnt')}
           error={errors.caloriesBurnt}
           required
         />
@@ -105,22 +106,22 @@ export default function WorkoutForm({ initialData, onSubmit, onCancel, loading }
         type="date"
         max={getTodayString()}
         value={formData.workoutDate}
-        onChange={(e) => setFormData({ ...formData, workoutDate: e.target.value })}
+        onChange={set('workoutDate')}
         error={errors.workoutDate}
         required
       />
 
       <Field
         label="Notes"
-        placeholder="e.g. 5x5 squats, feel great, outdoor trail run"
+        placeholder="e.g. 5×5 squats, outdoor trail run…"
         value={formData.notes}
-        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        onChange={set('notes')}
         error={errors.notes}
-        helperText="Max 255 characters"
+        helperText="Max 255 chars"
       />
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
-        <Button variant="secondary" onClick={onCancel} disabled={loading}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
+        <Button variant="secondary" type="button" onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
         <Button type="submit" variant="primary" loading={loading}>
